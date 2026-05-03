@@ -36,7 +36,7 @@ function mainEmbed() {
   return new EmbedBuilder()
     .setAuthor({
       name: "✨ PREMIUM RESET SERVICE",
-      iconURL: client.user.displayAvatarURL()
+      iconURL: "https://cdn.discordapp.com/attachments/1488240958712709291/1500447316044156948/IMG_0441.png?ex=69f877f5&is=69f72675&hm=dc7ac209d4d3275689c806d2fe02dd08e076e484318767e8614c6c1ee0e2d1ea&"
     })
     .setTitle("🔐 AUTO RESET KEY SYSTEM")
     .setDescription(
@@ -63,11 +63,11 @@ function mainEmbed() {
       },
       {
         name: "📌 HƯỚNG DẪN",
-        value: "Nhấn **🔑 Reset Key** để bắt đầu"
+        value: "Nhấn **🗝️ Reset** để reset key"
       }
     )
     .setColor("#00eaff")
-    .setThumbnail("https://cdn.discordapp.com/attachments/1488240958712709291/1500447316044156948/IMG_0441.png?ex=69f877f5&is=69f72675&hm=dc7ac209d4d3275689c806d2fe02dd08e076e484318767e8614c6c1ee0e2d1ea&")
+    .setThumbnail("https://cdn.discordapp.com/attachments/1488240958712709291/1500448459218747522/IMG_0469.gif?ex=69f87905&is=69f72785&hm=c5d87ad4bd3a738c8f183dc3e9b21693bf0d3ecf48486b39bc75cfccb69245c0&")
     .setImage("https://cdn.discordapp.com/attachments/1488240958712709291/1500397539742978099/IMG_4659.gif?ex=69f84999&is=69f6f819&hm=040340c069537f4776a7258461d755173fa081827364d1d3216f7b34d0d98f44&")
     .setFooter({
       text: "© Premium Service • Auto System"
@@ -84,8 +84,8 @@ client.once("ready", async () => {
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId("reset_key")
-      .setLabel("Reset Key")
-      .setEmoji("🔑")
+      .setLabel("Reset")
+      .setEmoji("🗝️")
       .setStyle(ButtonStyle.Success)
   );
 
