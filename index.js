@@ -50,16 +50,15 @@ function mainEmbed() {
       {
         name: "📦 DANH MỤC",
         value:
-`> 🔹 Fluorite  
-> 🔹 Proxy  
-> 🔹 Drip Client`,
+`> ➕ Fluorite  
+> ➕ Proxy  
+> ➕ Drip Client`,
         inline: true
       },
       {
         name: "📊 TRẠNG THÁI",
         value:
-`🟢 ONLINE  
-⚡ Stable`,
+`🟢 ONLINE`,
         inline: true
       },
       {
@@ -69,7 +68,7 @@ function mainEmbed() {
     )
     .setColor("#00eaff")
     .setThumbnail(client.user.displayAvatarURL())
-    .setImage("https://i.imgur.com/8wKQZ5L.gif")
+    .setImage("https://cdn.discordapp.com/attachments/1488240958712709291/1500397539742978099/IMG_4659.gif?ex=69f84999&is=69f6f819&hm=040340c069537f4776a7258461d755173fa081827364d1d3216f7b34d0d98f44&")
     .setFooter({
       text: "© Premium Service • Auto System"
     })
