@@ -256,7 +256,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
             },
             {
               name: "📊 Status",
-              value: "❌ REJECTED"
+              value: "❌ Key đã reset 3/3 | invalid"
             }
           )
           .setFooter({
