@@ -15,7 +15,10 @@ const {
 } = require("discord.js");
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers // FIX
+  ]
 });
 
 const TOKEN = process.env.TOKEN;
@@ -28,6 +31,7 @@ const cooldown = new Map();
 
 // ===== CHECK ADMIN =====
 function isAdmin(member) {
+  if (!member) return false;
   return member.roles.cache.has(ADMIN_ROLE_ID);
 }
 
@@ -36,7 +40,7 @@ function mainEmbed() {
   return new EmbedBuilder()
     .setAuthor({
       name: "✨ PREMIUM RESET SERVICE",
-      iconURL: "https://cdn.discordapp.com/attachments/1488240958712709291/1500447316044156948/IMG_0441.png?ex=69f877f5&is=69f72675&hm=dc7ac209d4d3275689c806d2fe02dd08e076e484318767e8614c6c1ee0e2d1ea&"
+      iconURL: "https://cdn.discordapp.com/attachments/1488240958712709291/1500447316044156948/IMG_0441.png"
     })
     .setTitle("🔐 AUTO RESET KEY SYSTEM")
     .setDescription(
@@ -49,16 +53,12 @@ function mainEmbed() {
     .addFields(
       {
         name: "📦 DANH MỤC",
-        value:
-`> ➕ Fluorite  
-> ➕ Proxy  
-> ➕ Drip Client`,
+        value: `> ➕ Fluorite\n> ➕ Proxy\n> ➕ Drip Client`,
         inline: true
       },
       {
         name: "📊 TRẠNG THÁI",
-        value:
-`🟢 ONLINE`,
+        value: `🟢 ONLINE`,
         inline: true
       },
       {
@@ -67,8 +67,8 @@ function mainEmbed() {
       }
     )
     .setColor("#00eaff")
-    .setThumbnail("https://cdn.discordapp.com/attachments/1488240958712709291/1500448459218747522/IMG_0469.gif?ex=69f87905&is=69f72785&hm=c5d87ad4bd3a738c8f183dc3e9b21693bf0d3ecf48486b39bc75cfccb69245c0&")
-    .setImage("https://cdn.discordapp.com/attachments/1488240958712709291/1500397539742978099/IMG_4659.gif?ex=69f84999&is=69f6f819&hm=040340c069537f4776a7258461d755173fa081827364d1d3216f7b34d0d98f44&")
+    .setThumbnail("https://cdn.discordapp.com/attachments/1488240958712709291/1500448459218747522/IMG_0469.gif")
+    .setImage("https://cdn.discordapp.com/attachments/1488240958712709291/1500397539742978099/IMG_4659.gif")
     .setFooter({
       text: "© Premium Service • Auto System"
     })
@@ -107,7 +107,7 @@ client.once("ready", async () => {
 // ===== INTERACTION =====
 client.on(Events.InteractionCreate, async (interaction) => {
 
-  // ===== BUTTON =====
+  // ===== BUTTON RESET =====
   if (interaction.isButton() && interaction.customId === "reset_key") {
 
     const userId = interaction.user.id;
@@ -167,6 +167,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
     const type = interaction.customId.replace("modal_", "");
     const key = interaction.fields.getTextInputValue("key");
+    const encodedKey = Buffer.from(key).toString("base64");
 
     const embed = new EmbedBuilder()
       .setColor("#ffcc00")
@@ -175,44 +176,43 @@ client.on(Events.InteractionCreate, async (interaction) => {
         iconURL: interaction.user.displayAvatarURL()
       })
       .addFields(
-        {
-          name: "👤 User",
-          value: `> ${interaction.user.tag}`,
-          inline: true
-        },
-        {
-          name: "📦 Type",
-          value: `> ${type}`,
-          inline: true
-        },
-        {
-          name: "🔑 Key",
-          value: `\`${key}\``
-        },
-        {
-          name: "📊 Status",
-          value: "🟡 WAITING"
-        }
+        { name: "👤 User", value: `> ${interaction.user.tag}`, inline: true },
+        { name: "📦 Type", value: `> ${type}`, inline: true },
+        { name: "🔑 Key", value: `\`${key}\`` },
+        { name: "📊 Status", value: "🟡 WAITING" }
       )
-      .setFooter({
-        text: `ID: ${interaction.user.id}`
-      })
+      .setFooter({ text: `ID: ${interaction.user.id}` })
       .setTimestamp();
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setCustomId(`ok_${interaction.user.id}_${type}_${key}`)
+        .setCustomId(`ok_${interaction.user.id}_${type}_${encodedKey}`)
         .setLabel("Accept")
         .setStyle(ButtonStyle.Success),
 
       new ButtonBuilder()
-        .setCustomId(`no_${interaction.user.id}_${type}_${key}`)
+        .setCustomId(`no_${interaction.user.id}_${type}_${encodedKey}`)
         .setLabel("Deny")
         .setStyle(ButtonStyle.Danger)
     );
 
     const adminChannel = await client.channels.fetch(ADMIN_CHANNEL_ID);
-    await adminChannel.send({ embeds: [embed], components: [row] });
+    const msg = await adminChannel.send({ embeds: [embed], components: [row] });
+
+    // FIX: gắn messageId vào button
+    const newRow = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId(`ok_${interaction.user.id}_${type}_${encodedKey}_${msg.id}`)
+        .setLabel("Accept")
+        .setStyle(ButtonStyle.Success),
+
+      new ButtonBuilder()
+        .setCustomId(`no_${interaction.user.id}_${type}_${encodedKey}_${msg.id}`)
+        .setLabel("Deny")
+        .setStyle(ButtonStyle.Danger)
+    );
+
+    await msg.edit({ components: [newRow] });
 
     await interaction.reply({ content: "✅ Đã gửi yêu cầu!", ephemeral: true });
   }
@@ -224,16 +224,19 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return interaction.reply({ content: "❌ Không có quyền", ephemeral: true });
     }
 
-    const [_, userId, type, key] = interaction.customId.split("_");
+    const [_, userId, type, encodedKey, messageId] = interaction.customId.split("_");
+    const key = Buffer.from(encodedKey, "base64").toString("utf8");
 
-    const embed = EmbedBuilder.from(interaction.message.embeds[0])
+    const msg = await interaction.channel.messages.fetch(messageId);
+
+    const embed = EmbedBuilder.from(msg.embeds[0])
       .setColor("#ff3b3b")
       .spliceFields(3, 1, {
         name: "📊 Status",
         value: "❌ REJECTED"
       });
 
-    await interaction.update({ embeds: [embed], components: [] });
+    await msg.edit({ embeds: [embed], components: [] });
 
     const user = await client.users.fetch(userId);
 
@@ -246,25 +249,16 @@ client.on(Events.InteractionCreate, async (interaction) => {
             iconURL: client.user.displayAvatarURL()
           })
           .addFields(
-            {
-              name: "📦 Type",
-              value: `> ${type}`
-            },
-            {
-              name: "🔑 Key đã gửi",
-              value: `\`${key}\``
-            },
-            {
-              name: "📊 Status",
-              value: "❌ Key đã reset 3/3 | invalid"
-            }
+            { name: "📦 Type", value: `> ${type}` },
+            { name: "🔑 Key đã gửi", value: `\`${key}\`` },
+            { name: "📊 Status", value: "❌ Key đã reset 3/3 | invalid" }
           )
-          .setFooter({
-            text: "Liên hệ admin nếu cần hỗ trợ"
-          })
+          .setFooter({ text: "Liên hệ admin nếu cần hỗ trợ" })
           .setTimestamp()
       ]
     });
+
+    await interaction.deferUpdate();
   }
 
   // ===== ACCEPT =====
@@ -274,10 +268,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
       return interaction.reply({ content: "❌ Không có quyền", ephemeral: true });
     }
 
-    const [_, userId, type, oldKey] = interaction.customId.split("_");
+    const [_, userId, type, encodedKey, messageId] = interaction.customId.split("_");
 
     const modal = new ModalBuilder()
-      .setCustomId(`admin_${userId}_${type}_${oldKey}`)
+      .setCustomId(`admin_${userId}_${type}_${encodedKey}_${messageId}`)
       .setTitle("Nhập key mới");
 
     modal.addComponents(
@@ -296,10 +290,13 @@ client.on(Events.InteractionCreate, async (interaction) => {
   // ===== ADMIN SUBMIT =====
   if (interaction.isModalSubmit() && interaction.customId.startsWith("admin_")) {
 
-    const [_, userId, type, oldKey] = interaction.customId.split("_");
+    const [_, userId, type, encodedKey, messageId] = interaction.customId.split("_");
+    const oldKey = Buffer.from(encodedKey, "base64").toString("utf8");
     const newKey = interaction.fields.getTextInputValue("newkey");
 
-    const embed = EmbedBuilder.from(interaction.message.embeds[0])
+    const msg = await interaction.channel.messages.fetch(messageId);
+
+    const embed = EmbedBuilder.from(msg.embeds[0])
       .setColor("#00ff99")
       .spliceFields(3, 1, {
         name: "📊 Status",
@@ -310,7 +307,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
         value: `\`${newKey}\``
       });
 
-    await interaction.update({ embeds: [embed], components: [] });
+    await msg.edit({ embeds: [embed], components: [] });
 
     const user = await client.users.fetch(userId);
 
@@ -323,29 +320,17 @@ client.on(Events.InteractionCreate, async (interaction) => {
             iconURL: client.user.displayAvatarURL()
           })
           .addFields(
-            {
-              name: "📦 Type",
-              value: `> ${type}`
-            },
-            {
-              name: "🔑 Key cũ",
-              value: `\`${oldKey}\``
-            },
-            {
-              name: "🆕 Key mới",
-              value: `\`${newKey}\``
-            },
-            {
-              name: "📊 Status",
-              value: "✅ SUCCESS"
-            }
+            { name: "📦 Type", value: `> ${type}` },
+            { name: "🔑 Key cũ", value: `\`${oldKey}\`` },
+            { name: "🆕 Key mới", value: `\`${newKey}\`` },
+            { name: "📊 Status", value: "✅ SUCCESS" }
           )
-          .setFooter({
-            text: "Cảm ơn bạn đã sử dụng dịch vụ 💎"
-          })
+          .setFooter({ text: "Cảm ơn bạn đã sử dụng dịch vụ 💎" })
           .setTimestamp()
       ]
     });
+
+    await interaction.deferUpdate();
   }
 
 });
